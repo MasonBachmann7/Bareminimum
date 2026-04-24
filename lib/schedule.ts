@@ -68,3 +68,29 @@ export function nextPlannedHour(plan: DailyPlan, localHour: number): number | nu
   for (const h of plan.hours) if (h > localHour) return h;
   return null;
 }
+
+/**
+ * Rough "hours until the next planned commit" for the dashboard. If we're
+ * past today's window, peek at tomorrow's plan to land on its first hour.
+ * We intentionally return hours (not minutes) — the number is decorative.
+ */
+export function hoursUntilNextCommit(params: {
+  installationId: string;
+  todayIsoDate: string;
+  tomorrowIsoDate: string;
+  localHour: number;
+  cadenceMin: number;
+  cadenceMax: number;
+}): { hours: number; nextLocalHour: number; tomorrow: boolean } | null {
+  const today = dailyPlan(params.installationId, params.todayIsoDate, params.cadenceMin, params.cadenceMax);
+  const next = nextPlannedHour(today, params.localHour);
+  if (next !== null) {
+    return { hours: next - params.localHour, nextLocalHour: next, tomorrow: false };
+  }
+  const tomorrow = dailyPlan(params.installationId, params.tomorrowIsoDate, params.cadenceMin, params.cadenceMax);
+  if (tomorrow.hours.length === 0) return null;
+  const firstTomorrow = tomorrow.hours[0];
+  // Simple 24h arithmetic: wrap around midnight, ignore DST.
+  const hours = Math.max(1, 24 - params.localHour + firstTomorrow);
+  return { hours, nextLocalHour: firstTomorrow, tomorrow: true };
+}

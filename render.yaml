@@ -1,0 +1,69 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# First-time setup:
+#   1. Push this repo to GitHub.
+#   2. In Render: New → Blueprint → select this repo → Apply.
+#   3. For every var below marked `sync: false`, set the value in the
+#      Render dashboard (Blueprints don't read from .env.local).
+#   4. After first deploy, copy the service's public URL into AUTH_URL.
+#
+# Cron: the Cron Job service at the bottom is commented out by default —
+# Render Cron Jobs are a paid add-on. Until you flip that on, point an
+# external pinger (cron-job.org) at /api/cron/tick with the bearer secret.
+
+services:
+  - type: web
+    name: bareminimum
+    runtime: node
+    plan: starter            # free tier sleeps after 15 min idle; starter stays warm
+    region: oregon
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_TRUST_HOST
+        value: "true"
+      # Render's default port for Node services is 10000; Next respects $PORT.
+      - key: PORT
+        value: "10000"
+      # --- set these in the dashboard (sync: false hides them from the blueprint)
+      - key: AUTH_URL
+        sync: false          # e.g. https://bareminimum.onrender.com
+      - key: AUTH_SECRET
+        sync: false          # openssl rand -base64 32
+      - key: DATABASE_URL
+        sync: false          # Neon pooled connection string
+      - key: DATABASE_URL_UNPOOLED
+        sync: false          # Neon direct connection string (used for migrations)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: AUTH_EMAIL_FROM
+        sync: false          # e.g. "bareminimum <noreply@yourdomain.com>"
+      - key: PAT_ENCRYPTION_KEY
+        sync: false          # openssl rand -base64 48
+      - key: CRON_SECRET
+        sync: false          # openssl rand -base64 32
+
+  # Optional: hourly cron via Render's native Cron Job.
+  # Uncomment if you want Render to own the schedule. Otherwise use an
+  # external pinger and skip this service.
+  #
+  # - type: cron
+  #   name: bareminimum-tick
+  #   runtime: docker         # cheapest way to get curl — or use runtime: node and a small script
+  #   schedule: "0 * * * *"
+  #   dockerCommand: >
+  #     sh -c "curl -fsS -X POST
+  #       -H 'Authorization: Bearer $CRON_SECRET'
+  #       $CRON_TARGET_URL"
+  #   envVars:
+  #     - key: CRON_SECRET
+  #       sync: false
+  #     - key: CRON_TARGET_URL
+  #       sync: false         # https://bareminimum.onrender.com/api/cron/tick

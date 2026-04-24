@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bareminimum — your contribution graph, on autopilot</title>
+<meta name="description" content="Connect your GitHub. The bot commits for you so your graph fills in. Tell it what you want to build and it contributes 100 lines a day toward that idea. You touch grass.">
+<meta property="og:title" content="bareminimum — your contribution graph, on autopilot">
+<meta property="og:description" content="The bot greens your graph and builds your side project at the same time. You touch grass.">
+<meta name="theme-color" content="#0a0d0a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%2326a641'/></svg>">
+<style>
+  :root {
+    --bg: #0a0d0a;
+    --panel: #111411;
+    --panel-hover: #161a16;
+    --text: #e7ebe5;
+    --muted: #8a8e87;
+    --line: #1b201c;
+    --green: #26a641;
+    --green-bright: #39d353;
+    --green-dim: #0e4429;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-family: var(--font-sans); line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--line); transition: border-color .18s ease; }
+  a:hover { border-color: var(--green); }
+
+  .shell { max-width: 880px; margin: 0 auto; padding: 28px 24px 0; }
+
+  nav.top {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 72px;
+  }
+  .brand {
+    font-family: var(--font-mono); font-weight: 600; letter-spacing: -.02em;
+    font-size: 15px; color: var(--text);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .brand-dot {
+    width: 10px; height: 10px; border-radius: 2px; background: var(--green);
+    box-shadow: 0 0 10px rgba(38,166,65,.6);
+  }
+  .nav-links a {
+    font-family: var(--font-mono); font-size: 13px; color: var(--muted);
+    border: none; margin-left: 22px;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  .hero { margin-bottom: 72px; }
+  h1 {
+    font-size: clamp(40px, 6.2vw, 64px); line-height: 1.02; letter-spacing: -.035em;
+    font-weight: 600; margin-bottom: 4px;
+  }
+  h1 .line2 { color: var(--muted); font-weight: 400; }
+  .lede {
+    font-size: 18px; color: var(--muted); max-width: 620px; margin-top: 28px;
+  }
+  .lede strong { color: var(--text); font-weight: 500; }
+
+  .pitch-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-bottom: 64px;
+  }
+  @media (max-width: 680px) { .pitch-row { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 22px 22px 24px;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .card:hover { border-color: #26302a; background: var(--panel-hover); }
+  .card-title {
+    font-size: 12px; font-family: var(--font-mono); color: var(--green);
+    margin-bottom: 14px; font-weight: 500; letter-spacing: .04em; text-transform: lowercase;
+  }
+  .card p { font-size: 15px; color: var(--text); line-height: 1.6; }
+
+  .cta { margin-bottom: 88px; }
+  .cta h2 {
+    font-size: 28px; letter-spacing: -.02em; font-weight: 600; margin-bottom: 22px;
+  }
+  .form { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
+  .form textarea {
+    background: var(--panel); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 14px 16px;
+    font-family: var(--font-sans); font-size: 15px; line-height: 1.5;
+    resize: vertical; min-height: 96px; outline: none;
+    transition: border-color .18s ease;
+  }
+  .form textarea:focus { border-color: var(--green-dim); }
+  .form textarea::placeholder { color: var(--muted); }
+  .form button {
+    background: var(--green); color: #fff; border: 0; border-radius: 8px;
+    padding: 13px 20px; font-size: 15px; font-weight: 600;
+    font-family: var(--font-sans); cursor: pointer;
+    transition: background .18s ease, transform .05s ease;
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .form button:hover { background: var(--green-bright); }
+  .form button:active { transform: translateY(1px); }
+  .form button svg { width: 18px; height: 18px; }
+  .fine {
+    font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-top: 6px;
+  }
+
+  .grass-section { margin-bottom: 16px; }
+  .grass-section h3 {
+    font-size: 14px; font-family: var(--font-mono); color: var(--muted);
+    margin-bottom: 14px; font-weight: 400; letter-spacing: .01em;
+  }
+  .grass-wrap {
+    background: linear-gradient(to bottom, #090c09 0%, #0a0f0b 60%, #0c150e 100%);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    position: relative;
+  }
+  canvas#grass { display: block; width: 100%; height: 280px; cursor: crosshair; }
+  .grass-caption {
+    position: absolute; left: 18px; top: 14px; color: #6b6f68;
+    font-family: var(--font-mono); font-size: 11px; pointer-events: none;
+    letter-spacing: .03em; user-select: none;
+  }
+
+  footer {
+    margin-top: 72px; padding: 28px 0 48px; border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--muted); font-family: var(--font-mono);
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  footer a { color: var(--text); border-color: var(--line); }
+  footer a:hover { border-color: var(--green); }
+
+  @media (prefers-reduced-motion: reduce) {
+    canvas#grass { cursor: default; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <nav class="top">
+    <div class="brand"><span class="brand-dot"></span>bareminimum</div>
+    <div class="nav-links">
+      <a href="#how">how</a>
+      <a href="#grass">grass</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>
+      Your contribution graph,<br>
+      on autopilot.<br>
+      <span class="line2">Your side project, too.</span>
+    </h1>
+    <p class="lede">
+      Connect your GitHub. We commit for you — quietly, realistically, every day — so your graph looks like you've been working.
+      Meanwhile, tell the bot what you've been meaning to build. It writes <strong>100 lines a day</strong> toward that idea.
+      You'll finish a side project without ever starting one.
+    </p>
+  </section>
+
+  <section class="pitch-row">
+    <div class="card">
+      <div class="card-title">01 / the graph fills in</div>
+      <p>
+        Commits land at a believable cadence, with plausible messages, to a repo you control. Your profile stops reading "hasn't worked since March" and starts reading "consistently productive." The graph won't know. Neither will anyone else.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">02 / the side project builds itself</div>
+      <p>
+        Since the bot's in there anyway, it may as well write something useful. Describe what you've been meaning to build — a CLI, a dashboard, the game you keep talking about — and 100 lines a day land toward it. One day you'll pull the repo and realize you shipped.
+      </p>
+    </div>
+  </section>
+
+  <section class="cta" id="how">
+    <h2>Start doing less.</h2>
+    <form class="form" id="connect-form" autocomplete="off">
+      <textarea
+        name="idea"
+        placeholder="What should we build? e.g. 'a CLI that tracks my coffee intake', 'a tiny markdown wiki', 'the SaaS i keep tweeting about'"
+      ></textarea>
+      <button type="submit" id="connect-btn">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        <span>connect github</span>
+      </button>
+      <div class="fine">no credit card · disconnect anytime · you probably will not disconnect</div>
+    </form>
+  </section>
+
+  <section class="grass-section" id="grass">
+    <h3>here is some grass for you to touch while your bot is busy at work</h3>
+    <div class="grass-wrap">
+      <div class="grass-caption">move your cursor. that's the ceremony.</div>
+      <canvas id="grass-canvas" aria-hidden="true"></canvas>
+    </div>
+  </section>
+
+  <footer>
+    <div>© 2026 bareminimum · probably satirical · definitely functional</div>
+    <div>built by the team behind <a href="https://bugstack.ai">bugstack</a></div>
+  </footer>
+
+</div>
+
+<script>
+// ---------- connect form (demo) ----------
+(() => {
+  const form = document.getElementById('connect-form');
+  const btn = document.getElementById('connect-btn');
+  const btnLabel = btn.querySelector('span');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const original = btnLabel.textContent;
+    btnLabel.textContent = 'redirecting to github…';
+    btn.disabled = true;
+    setTimeout(() => {
+      btnLabel.textContent = '(demo) oauth flow goes here';
+      setTimeout(() => { btnLabel.textContent = original; btn.disabled = false; }, 2200);
+    }, 700);
+  });
+})();
+
+// ---------- interactive grass ----------
+(() => {
+  const canvas = document.getElementById('grass-canvas');
+  const ctx = canvas.getContext('2d');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let W = 0, H = 0, dpr = 1;
+  let blades = [];
+  let mouseX = -9999, mouseY = -9999;
+  let lastTime = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    W = rect.width;
+    H = rect.height;
+    initBlades();
+  }
+
+  function initBlades() {
+    blades = [];
+    const count = Math.max(110, Math.floor(W / 3.5));
+    for (let i = 0; i < count; i++) {
+      const baseX = (i / count) * W + (Math.random() - 0.5) * 5;
+      const depth = Math.random(); // 0 back, 1 front
+      blades.push({
+        x: baseX,
+        y: H - 4 - Math.random() * 5,
+        height: 52 + Math.random() * 70 + depth * 14,
+        width: 2 + Math.random() * 1.6,
+        hue: 95 + Math.random() * 35,
+        sat: 35 + Math.random() * 28,
+        light: 18 + depth * 26 + Math.random() * 7,
+        angle: (Math.random() - 0.5) * 0.08,
+        vel: 0,
+        stiffness: 0.03 + Math.random() * 0.02,
+        phase: Math.random() * Math.PI * 2,
+        depth: depth,
+      });
+    }
+    blades.sort((a, b) => a.depth - b.depth); // back to front
+  }
+
+  function setMouseFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    let cx, cy;
+    if (e.touches && e.touches.length) {
+      cx = e.touches[0].clientX; cy = e.touches[0].clientY;
+    } else {
+      cx = e.clientX; cy = e.clientY;
+    }
+    mouseX = cx - rect.left;
+    mouseY = cy - rect.top;
+  }
+  function clearMouse() { mouseX = -9999; mouseY = -9999; }
+
+  function tick(time) {
+    if (!lastTime) lastTime = time;
+    const dtMs = Math.min(40, time - lastTime);
+    lastTime = time;
+    const dt = dtMs / 16.6667; // scale: 1 at 60fps
+
+    ctx.clearRect(0, 0, W, H);
+
+    // soil tint at bottom
+    const soil = ctx.createLinearGradient(0, H - 34, 0, H);
+    soil.addColorStop(0, 'rgba(14,68,41,0)');
+    soil.addColorStop(1, 'rgba(14,68,41,0.35)');
+    ctx.fillStyle = soil;
+    ctx.fillRect(0, H - 34, W, 34);
+
+    const wave = time * 0.0009;
+
+    for (const b of blades) {
+      const wind = reduceMotion ? 0 : Math.sin(wave + b.phase + b.x * 0.012) * 0.028;
+
+      // cursor influence at blade midpoint
+      const midX = b.x + Math.sin(b.angle * 0.7) * b.height * 0.7;
+      const midY = b.y - Math.cos(b.angle * 0.7) * b.height * 0.7;
+      const dx = midX - mouseX;
+      const dy = midY - mouseY;
+      const distSq = dx * dx + dy * dy;
+      const radius = 120;
+      let force = 0;
+      if (distSq < radius * radius) {
+        const dist = Math.sqrt(distSq);
+        const s = 1 - dist / radius;
+        force = (dx >= 0 ? 1 : -1) * s * s * 0.16;
+      }
+
+      // integrate
+      b.vel += (-b.angle * b.stiffness + force + wind * 0.0045) * dt;
+      b.vel *= Math.pow(0.88, dt);
+      b.angle += b.vel * dt;
+
+      if (b.angle > 1.4) { b.angle = 1.4; b.vel = Math.min(b.vel, 0) * -0.3; }
+      if (b.angle < -1.4) { b.angle = -1.4; b.vel = Math.max(b.vel, 0) * -0.3; }
+
+      // draw tapered blade (two quadratics meeting at tip)
+      const baseL = b.x - b.width / 2;
+      const baseR = b.x + b.width / 2;
+      const tipX = b.x + Math.sin(b.angle) * b.height;
+      const tipY = b.y - Math.cos(b.angle) * b.height;
+      const ctrlX = b.x + Math.sin(b.angle * 0.55) * b.height * 0.55;
+      const ctrlY = b.y - Math.cos(b.angle * 0.55) * b.height * 0.55;
+
+      ctx.beginPath();
+      ctx.moveTo(baseL, b.y);
+      ctx.quadraticCurveTo(ctrlX - b.width * 0.35, ctrlY, tipX, tipY);
+      ctx.quadraticCurveTo(ctrlX + b.width * 0.35, ctrlY, baseR, b.y);
+      ctx.closePath();
+      ctx.fillStyle = 'hsl(' + b.hue.toFixed(1) + ', ' + b.sat.toFixed(1) + '%, ' + b.light.toFixed(1) + '%)';
+      ctx.fill();
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('mousemove', setMouseFromEvent);
+  canvas.addEventListener('mouseleave', clearMouse);
+  canvas.addEventListener('touchmove', setMouseFromEvent, { passive: true });
+  canvas.addEventListener('touchend', clearMouse);
+  canvas.addEventListener('touchcancel', clearMouse);
+
+  resize();
+  requestAnimationFrame(tick);
+})();
+</script>
+
+</body>
+</html>

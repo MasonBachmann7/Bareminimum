@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
-    "@auth/pg-adapter": "^1.11.2",
+    "@auth/pg-adapter": "^1.11.3",
     "@neondatabase/serverless": "^0.10.4",
     "@octokit/rest": "^21.0.2",
     "next": "^16.2.4",
